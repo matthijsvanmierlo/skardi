@@ -1,0 +1,49 @@
+{
+  "timeZone": "America/New_York",
+  "dependencies": {
+    "enabledAdvancedServices": [
+      {
+        "userSymbol": "Drive",
+        "version": "v2",
+        "serviceId": "drive"
+      }
+    ]
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/script.container.ui",
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/script.scriptapp"
+  ],
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "addOns": {
+    "common": {
+      "name": "Skardi",
+      "logoUrl": "https://drive.google.com/uc?view&id=1QWpl1ptp-GrlZXgDyZjA_mf9aS_C7acS",
+      "useLocaleFromApp": true,
+      "homepageTrigger": {
+        "runFunction": "onOpen",
+        "enabled": true
+      },
+      "layoutProperties": {
+        "primaryColor": "#2c648f",
+        "secondaryColor": "#2c648f"
+      },
+      "universalActions": [
+        {
+          "label": "Looker Studio Curriculum Map",
+          "openLink": "https://drive.google.com/uc?view&id=1QWpl1ptp-GrlZXgDyZjA_mf9aS_C7acS"
+        }
+      ]
+    }
+  },
+  "sheets": {
+    "homepageTrigger": {
+      "runFunction": "onSheetsOpen"
+    },
+    "onFileScopeGrantedTrigger": {
+      "runFunction": "onFileScopeGrantedEditors"
+    }
+  }
+}

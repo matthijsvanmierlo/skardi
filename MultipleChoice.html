@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: lightgray;
+      /* Pure white background */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .center-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    #next,
+    .choices {
+      font-size: 15px;
+      background-color: white;
+      color: black;
+      border-radius: 5px;
+      border: black;
+      padding: 10px 20px;
+      margin: 5px 0;
+      /* Provides spacing between elements */
+      text-align: center;
+      width: 97%;
+    }
+
+    #score {
+      font-size: 15px;
+      background-color: #2c648f;
+      color: white;
+      border-radius: 5px;
+      border: maroon;
+      padding: 10px 20px;
+      margin: 5px 0;
+      /* Provides spacing between elements */
+      text-align: center;
+      width: 90%;
+    }
+
+    #question {
+      font-size: 50px;
+      background-color: #2c648f;
+      color: white;
+      border-radius: 5px;
+      padding: 5px 20px;
+      margin: 6px 0;
+      /* Provides spacing between elements */
+      text-align: center;
+      width: 90%;
+    }
+
+    #next,
+    .choices {
+      cursor: pointer;
+      /* Indicates it's clickable */
+      transition: background-color 0.3s;
+    }
+
+    #next:hover,
+    .choices:hover {
+      background-color: #2c648f;
+      color: white;
+      /* Slightly darker background when hovered */
+    }
+
+    #options label {
+      font-size: 15px;
+      background-color: white;
+      color: black;
+      border-radius: 10px;
+      border: black;
+      padding: 6px;
+      margin-bottom: 5px;
+      /* Provides spacing between elements */
+      display: block;
+      /* Provides overflow protection */
+
+    }
+
+    .correct-ans{
+      background-color: green;
+      color: white;
+    }
+
+    .incorrect-ans{
+      background-color:darkred;
+      color:white;
+    }
+
+    #options {
+      width: 80%;
+    }
+
+    #options label:hover {
+      background-color: darkred;
+      color: white;
+    }
+
+    input[type='radio'] {
+      transform: scale(1.25);
+    }
+  </style>
+  <base target="_top">
+  <script>
+    // Store the flashcard data
+    let flashcardData = [];
+    let currentIndex = -1;
+    let questions = []
+    let question = null;
+
+    // Get the flashcard data
+    function fetchFlashcardData() {
+      google.script.run.withSuccessHandler(function (data) {
+        flashcardData = JSON.parse(data);
+        // Call the functions to load the data here...
+        currentIndex = -1;
+        questions = generateQuestions(flashcardData);
+        if(questions == null){return};
+        showQuestion();
+      }).getFlashcardData();
+    }
+
+    function generateQuestions(_flashcardData) {
+      if(_flashcardData.length < 4){
+        alert("Make at least 4 term/definition pairs...");
+        closePopup();
+        return null;
+      }
+      let questionData = [];
+      // [[t,d], [t,d]]
+      for (let i = 0; i < _flashcardData.length; i++) {
+        // Current term
+        let currTerm = _flashcardData[i][0];
+        let currAnswer = _flashcardData[i][1];
+        // Generate a list of indices except for that one to choose the distractors from
+        let tempDistractorList = []
+        for (let j = 0; j < _flashcardData.length; j++) {
+          if (i != j) {
+            tempDistractorList.push(j);
+          }
+        }
+        tempDistractorList = shuffle(tempDistractorList);
+        // Choose the first 3 elements based on the shuffled indices, these are the distractors and include the answer
+        let answerList = [currAnswer, _flashcardData[tempDistractorList[0]][1], _flashcardData[tempDistractorList[1]][1], _flashcardData[tempDistractorList[2]][1]];
+        answerList = shuffle(answerList);
+        // Choose what index of the correct answer is going to be
+        questionData.push({
+          question: currTerm,
+          answers: answerList,
+          correctAnswer: currAnswer
+        });
+      }
+      questionData = shuffle(questionData);
+      return questionData;
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function closePopup() {
+        google.script.run.closeFlashcards();
+        google.script.host.close();
+    }
+
+    function showQuestion() {
+     
+        if (currentIndex == questions.length - 1) {
+          questions = shuffle(questions);
+          currentIndex = -1;
+        }
+
+        currentIndex = currentIndex + 1; // Next index
+
+        question = questions[currentIndex];
+
+        // Clear previous data
+        document.getElementById("question").innerText = question.question;
+        var options = document.getElementById("options")
+        options.innerHTML = "";
+
+        // Create the options for the question
+        for (var i = 0; i < question.answers.length; i++) {
+          var button = document.createElement("button");
+          button.innerHTML = question.answers[i];
+          button.setAttribute("class", "choices");
+          button.setAttribute("id", "button-" + i);
+          options.appendChild(button);
+          options.appendChild(document.createElement("br"));
+        }
+
+        for (let i = 0; i < 4; i++) {
+          document.getElementById("button-" + i).onclick = function () {
+            console.log("button-" + i);
+            let textAnswer = document.getElementById("button-" + i).innerHTML;
+            checkAnswer(textAnswer);
+          }
+        }
+
+        document.getElementById("next").onclick = function () {
+          currentIndex++;
+          for(let i = 0; i < 4; i++){
+            let tempbutton = document.getElementById("button-" + i);
+            tempbutton.classList.remove("correct-ans");
+            tempbutton.classList.remove("incorrect-ans");
+            tempbutton.disabled = false;
+          }
+          showQuestion();
+        };
+      
+    }
+
+    function checkAnswer(selectedAnswer) {
+
+      // Get the current scores from the client side
+      var currentCorrect = parseInt(document.getElementById("score").getAttribute("data-correct"));
+      var currentIncorrect = parseInt(document.getElementById("score").getAttribute("data-incorrect"));
+
+      if (question.correctAnswer == selectedAnswer) {
+        currentCorrect += 1;
+      } else {
+        currentIncorrect += 1;
+      }
+      // Recolor the buttons depending on correct/incorrect answer for feedback
+      for(let i = 0; i < 4; i++){
+        let tempbutton = document.getElementById("button-" + i);
+        if(tempbutton.innerHTML == question.correctAnswer){
+          tempbutton.classList.add("correct-ans")
+        }
+        else{
+          tempbutton.classList.add("incorrect-ans");
+        }
+        tempbutton.disabled = true;
+      }
+
+      updateScore(currentCorrect, currentIncorrect);
+    }
+
+    function updateScore(correct, incorrect) {
+      document.getElementById("score").innerText = "Correct: " + correct + ", Incorrect: " + incorrect;
+      document.getElementById("score").setAttribute("data-correct", correct);
+      document.getElementById("score").setAttribute("data-incorrect", incorrect);
+    }
+
+    fetchFlashcardData();
+
+  </script>
+</head>
+
+<body>
+  <div class="center-container">
+    <div id="question"></div>
+    <!-- <div id="options-container"> -->
+    <div id="options"></div>
+    <!-- </div> -->
+    <button id="next">Next Question</button>
+    <div id="score" data-correct="0" data-incorrect="0">Correct: 0 | Incorrect: 0</div>
+  </div>
+
+</body>
+
+</html>

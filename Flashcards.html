@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: maximum;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      /* Change the font for the entire popup */
+    }
+
+    #flashcard-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #f2f2f2;
+      /* Light grey background */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #flashcard {
+      text-align: center;
+    }
+
+    #card-content {
+      background: #2c648f;
+      /* Maroon background */
+      color: white;
+      /* White text */
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 24px;
+      /* Adjust the font size as needed */
+    }
+
+    #term,
+    #definition {
+      max-height: 200px;
+      /* Set a maximum height for the text boxes */
+      overflow-y: auto;
+      /* Enable vertical scrolling when content exceeds the height */
+    }
+
+    #nav-buttons button {
+      font-size: 20px;
+      /* Adjust the font size as needed */
+      padding: 10px 20px;
+      /* Increase button size */
+      border: 2px solid black;
+      /* Add a black border to the buttons */
+      border-radius: 5px;
+      margin: 10px 5px;
+      /* Move buttons down and add space between them */
+      cursor: pointer;
+    }
+
+    #next-button:hover,
+    #prev-button:hover,
+    #flip-button:hover,
+    #shuffle-button:hover,
+    #close-button:hover {
+      background-color: #2c648f;
+      /* Slightly darker background when hovered */
+    }
+
+    /* Disable the "Prev" and "Next" buttons */
+    #prev-button:disabled,
+    #next-button:disabled {
+      background: #e0e0e0;
+      /* Light grey background when disabled */
+      color: #a0a0a0;
+      /* Light grey text color when disabled */
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="flashcard-container">
+    <div id="flashcard">
+      <div id="card-content">
+        <div id="term"></div>
+        <div id="definition" style="display: none;"></div>
+      </div>
+      <div id="nav-buttons">
+        <button id="prev-button">Previous</button>
+        <button id="flip-button">Flip</button>
+        <button id="next-button">Next</button>
+        <button id="shuffle-button">Shuffle</button>
+        <button id="close-button" onclick="closePopup()">Close</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    var flashcardData;
+      var currentIndex = 0;
+      var isTermHidden = false;
+
+      function closePopup() {
+        google.script.run.closeFlashcards();
+        google.script.host.close();
+      }
+
+      function toggleVisibility() {
+        isTermHidden = !isTermHidden;
+        document.getElementById('term').style.display = isTermHidden ? 'none' : 'block';
+        document.getElementById('definition').style.display = isTermHidden ? 'block' : 'none';
+      }
+
+      function shuffleArray(array) {
+        for (var i = array.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var temp = array[i];
+          array[i] = array[j];
+          array[j] = temp;
+        }
+        return array;
+      }
+
+      function displayFlashcard() {
+        var termElement = document.getElementById('term');
+        var definitionElement = document.getElementById('definition');
+        console.log(flashcardData.length);
+        if(flashcardData.length == 0){
+          closePopup();
+          alert("Please have at least 1 term/definition pair...");
+        }
+        else{
+          termElement.textContent = flashcardData[currentIndex][0];
+          definitionElement.textContent = flashcardData[currentIndex][1];
+          isTermHidden ? (definitionElement.style.display = 'block') : (termElement.style.display = 'block');
+          isTermHidden ? (termElement.style.display = 'none') : (definitionElement.style.display = 'none');
+
+          // Disable or enable "Prev" and "Next" buttons based on the current card index
+          document.getElementById('prev-button').disabled = currentIndex === 0;
+          document.getElementById('next-button').disabled = currentIndex === flashcardData.length - 1;
+        }
+        
+      }
+
+      // ******************************************
+
+      function closePopup() {
+        google.script.run.closeFlashcards();
+        google.script.host.close();
+      }
+
+      function fetchFlashcardData() {
+        google.script.run.withSuccessHandler(function(data) {
+          flashcardData = JSON.parse(data);
+          displayFlashcard(); // Display the first term and definition when the data is loaded
+        }).getFlashcardData();
+      }
+
+      document.getElementById('prev-button').addEventListener('click', function() {
+        if (currentIndex > 0) {
+          currentIndex--;
+          displayFlashcard();
+        }
+      });
+
+      document.getElementById('flip-button').addEventListener('click', function() {
+        toggleVisibility();
+      });
+
+      document.getElementById('next-button').addEventListener('click', function() {
+        if (currentIndex < flashcardData.length - 1) {
+          // TODO stop incrementing if you're past the past card, or cycle back to the first
+          currentIndex++;
+          displayFlashcard();
+        }
+      });
+
+      document.getElementById('shuffle-button').addEventListener('click', function() {
+        flashcardData = shuffleArray(flashcardData); // Manually shuffle the flashcard data
+        currentIndex = 0; // Reset the index to the first card
+        displayFlashcard();
+      });
+
+      fetchFlashcardData(); // Call to load and shuffle flashcard data when the popup opens.
+  </script>
+</body>
+
+</html>
